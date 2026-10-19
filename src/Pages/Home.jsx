@@ -1,8 +1,7 @@
+import { useState } from "react";
 import Greetings from "../components/Greetings";
 import UserCard from "../components/UserCard";
 
-const visitorName = window.prompt('Qual o seu nome ?') ||
-"Visitante";
 
 const team = [
     {
@@ -30,12 +29,24 @@ const team = [
         avatarUrl: 'https://randomuser.me/api/portraits/men/31.jpg',
         focus: 'Testes e experiência do usuário',
     },
-]
+];
 
 function Home() {
+    const [abacaxi, SetAbacaxi] = useState('');
+
     return(
         <>
-        <Greetings nome={visitorName}/>
+        <div className="name-form">
+            <label htmlFor="visitor-nome">como podemos chamar você?</label>
+            <input 
+            id="visitor-name"
+            type="text"
+            value={abacaxi}
+            onChange={(event) => SetAbacaxi(event.target.value)}
+            placeholder="Digite seu nome"
+             />
+        </div>
+        <Greetings nome={abacaxi || "Visitante"}/>
 
         <section id="equipe">
             <div className="section-heading">

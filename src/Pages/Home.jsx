@@ -46,6 +46,7 @@ function Home() {
             placeholder="Digite seu nome"
              />
         </div>
+        
         <Greetings nome={abacaxi || "Visitante"}/>
 
         <section id="equipe">

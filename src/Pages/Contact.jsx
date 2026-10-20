@@ -1,47 +1,76 @@
 import './Contact.css'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
-const initialform = {
-    cep: "",
-    street: "",
-    neigborhood: "",
-    state: "",
-    city: "",
-    number: "",
-    message: "",
-}
-  
+const initialForm = {
+    cep: '',
+    street: '',
+    neighborhood: '',
+    state: '',
+    city: '',
+    number: '',
+    message: '',
+};
 
 export default function Contact() {
-    const [form, setForm] = useState (initialform);
-    Const [status, SetStatus] = useState({ type:" ", message: ""});
+    const [form, setForm] = useState(initialForm);
+    const [status, setStatus] = useState({ type: ' ', message: '' });
+    const [loadingCep, setLoadingCep] = useState(false);
+    const [states, setStates] = useState([]);
 
-
-    async function searchCep( ) {
+    async function searchCep() {
         const cleanCep = form.cep.replace(/\D/g, '');
-        if (cleanCep.length !== 8){
-            SetStatus({ type: "error", message : Digite um CEP valido!'})
-        }
-        try {
-            const response = await fetch ('https://viacep.com.br/ws/${}/json/');
-            if (!response.ok) throw new Error('Cep não encontrado!');
-            const adress =await response.json();
-            if (adress.erro) thRow new Error ("CEP não encontrado");
-            setForm ((current))  => ({
-                ...current,
-            cep  : cleanCep
-            street:adress.logradouro 
-            })
-            
-                setForm();
-            SetStatus ({type:'success', message: 'Endereço encontrado!'});
 
-        } catch(erro){
-            SetStatus ({ type:'error', message: erro.message})
+        if (cleanCep.length !== 8) {
+            setStatus({ type: 'error', message: 'Digite um CEP válido!' });
+            return;
         }
-        
+
+        setLoadingCep(true);
+
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            if (!response.ok) throw new Error('CEP não encontrado!');
+
+            const address = await response.json();
+            if (address.erro) throw new Error('CEP não encontrado');
+
+            setForm((current) => ({
+                ...current,
+                cep: cleanCep,
+                street: address.logradouro || '',
+                neighborhood: address.bairro || '',
+                state: address.estado || '',
+                city: address.localidade || ''
+            }));
+
+            setStatus({ type: 'success', message: 'Endereço encontrado!' });
+        } catch (erro) {
+            setStatus({ type: 'error', message: erro.message });
+        } finally {
+            setLoadingCep(false);
+        }
     }
+    useEffect(() => {
+        fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
+            .then((response) => {
+                if (!response.ok) throw new Error('Não foi possível carregar os estados');
+                return response.json();
+            })
+            .then(setStates)
+            .catch(() =>
+                setStatus({
+                    type: 'error',
+                    message: 'Não foi possível carregar os estados',
+                })
+            );
+    }, []);
+
+    function handleChange(event) {
+        const { name, value} = event.target;
+        setForm((current) => ({...current, [name]: value}));
+    }
+
     return (
 
         <section className="contact-page">
@@ -57,17 +86,29 @@ export default function Contact() {
                                 <input 
                                     name="cep" 
                                     value={form.cep}
+                                    onChange={handleChange}
+                                   //  onChange={(event) => (serForm ((current) => ({ 
+                                   // current,cep: e.targrt.value})
+                                   // ))}
                                     inputMode="numeric" 
                                     placeholder="00000-000" 
                                 />
-                                <button type="button" onClick={searchCep}>
+                                <button type="button" onClick={searchCep} disabled={loadingCep}>
+                                    {loadingCep ? 'Buscando ...' : 'Buscar CEP'}
                                 </button>
                             </div>
                         </label>
                         <label>Estado
-                            <select 
+                              <select 
                                 name="state" 
+                                value={form.state}
+                                onChange={handleChange}
                             >
+                                <option>Selecione</option>
+                                {states.map((state) => 
+                                    <option key={state.id} value={state.nome}>
+                                        {state.nome}
+                                    </option>)}
                             </select>
                         </label>
                         <label>Cidade
@@ -79,7 +120,9 @@ export default function Contact() {
                         <label>Rua
                             <input 
                                 name="street" 
-                                placeholder="Nome da rua" 
+                                 placeholder="Nome da rua" 
+                                 value={form.street}
+                                 onChange={handleChange}
                             />
                         </label>
                         <label>Número
@@ -92,6 +135,8 @@ export default function Contact() {
                             <input 
                                 name="neighborhood" 
                                 placeholder="Seu bairro" 
+                                value={form.neighborhood}
+                                onChange={handleChange}
                             />
                         </label>
                     </div>
